@@ -11,6 +11,8 @@ export default {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        neuron: "#4caf50",
+        connection: "#f44336",
       },
     },
   },
