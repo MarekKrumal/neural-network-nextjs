@@ -18,7 +18,7 @@ export default function LearningPanel({
   onLearnStep,
 }: Props) {
   return (
-    <div className="border p-4 w-[500px] bg-gray-50 text-sm">
+    <div className="border p-4 w-[500px] bg-gray-50 text-sm text-black">
       <h2 className="text-lg font-bold mb-2">Learning Demo</h2>
       <p className="mb-1">
         Tady můžeš zadat cílovou hodnotu (Target) pro 1 výstupní neuron a
