@@ -5,28 +5,29 @@ import ConfigPanel from "./ConfigPanel";
 import LearningPanel from "./LearningPanel";
 import "katex/dist/katex.min.css";
 
+// Sigmoid + derivace
 function sigmoid(z: number): number {
   return 1 / (1 + Math.exp(-z));
 }
-
 function sigmoidPrime(z: number): number {
-  // Derivace sigmoid = sigmoid(z) * (1 - sigmoid(z))
   const s = sigmoid(z);
   return s * (1 - s);
 }
 
+/**
+ * Hlavní "orchestrující" komponenta,
+ * drží stavy: inputCount, hiddenCount, outputCount, váhy atd.
+ */
 export default function NeuralNetworkCanvas() {
   // -----------------------------
-  // 1) Počty vstupů, výstupů
+  // STAVY
   // -----------------------------
   const [inputCount, setInputCount] = useState(3);
+  const [hiddenCount, setHiddenCount] = useState(4);
   const [outputCount, setOutputCount] = useState(1);
 
-  // Hodnoty vstupů
+  // Vstupní hodnoty
   const [inputValues, setInputValues] = useState<number[]>([1, 2, 3]);
-
-  // Hidden neurony (fixně 4 pro demo)
-  const hiddenCount = 4;
 
   // Váhy Input->Hidden (inputCount x hiddenCount)
   const [weightsIH, setWeightsIH] = useState<number[][]>([
@@ -49,56 +50,57 @@ export default function NeuralNetworkCanvas() {
   ]);
   const [outputActivations, setOutputActivations] = useState<number[]>([0]);
 
-  // Zobrazit / skrýt konfigurační panel
+  // Konfigurační panel zobrazen?
   const [showConfig, setShowConfig] = useState(false);
 
-  // Pro learning (zatím 1 output)
+  // Learning stavy (1 output)
   const [targetValue, setTargetValue] = useState(0.5);
   const [learningRate, setLearningRate] = useState(0.1);
 
+  // -----------------------------
+  // 1) Spočti dopřednou propagaci při změně stavu
+  // -----------------------------
   useEffect(() => {
     forwardPropagation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputValues, weightsIH, weightsHO]);
 
-  // -----------------------------
-  // 2) Dopředná propagace
-  // -----------------------------
   function forwardPropagation() {
-    // 1) Hidden layer
+    // Skrytá vrstva
     const newHidden: number[] = [];
     for (let j = 0; j < hiddenCount; j++) {
       let sum = 0;
       for (let i = 0; i < inputCount; i++) {
-        // Pokud index i neexistuje v inputValues, je 0
         const x_i = inputValues[i] ?? 0;
         const w_ij = weightsIH[i]?.[j] ?? 0;
         sum += x_i * w_ij;
       }
       newHidden[j] = sigmoid(sum);
     }
-
-    // 2) Output layer
-    const newOut: number[] = [];
-    for (let outIdx = 0; outIdx < outputCount; outIdx++) {
-      let sumOut = 0;
+    // Výstup
+    const newOutput: number[] = [];
+    for (let o = 0; o < outputCount; o++) {
+      let sum = 0;
       for (let j = 0; j < hiddenCount; j++) {
         const h_j = newHidden[j] ?? 0;
-        const w_jo = weightsHO[j]?.[outIdx] ?? 0;
-        sumOut += h_j * w_jo;
+        const w_jo = weightsHO[j]?.[o] ?? 0;
+        sum += h_j * w_jo;
       }
-      newOut.push(sigmoid(sumOut));
+      newOutput.push(sigmoid(sum));
     }
-
     setHiddenActivations(newHidden);
-    setOutputActivations(newOut);
+    setOutputActivations(newOutput);
   }
 
   // -----------------------------
-  // 3) Změna počtu vstupů/výstupů
+  // 2) Re-inicializace s ohledem na inputCount/hiddenCount/outputCount
   // -----------------------------
-  function reinitNetwork(newInputCount: number, newOutputCount: number) {
-    // 1) Uprav inputValues
+  function reinitNetwork(
+    newInputCount: number,
+    newHiddenCount: number,
+    newOutputCount: number
+  ) {
+    // a) InputValues
     let newInputs = [...inputValues];
     while (newInputs.length < newInputCount) {
       newInputs.push(0);
@@ -107,10 +109,9 @@ export default function NeuralNetworkCanvas() {
       newInputs = newInputs.slice(0, newInputCount);
     }
 
-    // 2) Uprav weightsIH: novou matici (newInputCount x hiddenCount)
+    // b) WeightsIH (newInputCount x newHiddenCount)
     const newWih = Array.from({ length: newInputCount }, (_, i) =>
-      Array.from({ length: hiddenCount }, (_, j) => {
-        // zachovat stávající, pokud existuje, jinak random
+      Array.from({ length: newHiddenCount }, (_, j) => {
         if (i < weightsIH.length && j < weightsIH[i].length) {
           return weightsIH[i][j];
         } else {
@@ -119,10 +120,9 @@ export default function NeuralNetworkCanvas() {
       })
     );
 
-    // 3) Uprav weightsHO: novou matici (hiddenCount x newOutputCount)
-    const newWho = Array.from({ length: hiddenCount }, (_, j) =>
+    // c) WeightsHO (newHiddenCount x newOutputCount)
+    const newWho = Array.from({ length: newHiddenCount }, (_, j) =>
       Array.from({ length: newOutputCount }, (_, o) => {
-        // zachovat stávající, pokud existuje, jinak random
         if (j < weightsHO.length && o < weightsHO[j].length) {
           return weightsHO[j][o];
         } else {
@@ -131,32 +131,30 @@ export default function NeuralNetworkCanvas() {
       })
     );
 
+    setInputCount(newInputCount);
+    setHiddenCount(newHiddenCount);
+    setOutputCount(newOutputCount);
+
     setInputValues(newInputs);
     setWeightsIH(newWih);
     setWeightsHO(newWho);
-    setInputCount(newInputCount);
-    setOutputCount(newOutputCount);
   }
 
   function randomWeight() {
-    // random v rozmezí -1 až 1
     return Math.random() * 2 - 1;
   }
 
   // -----------------------------
-  // 4) Jednoduché učení (1 output)
+  // 3) Jednoduchý backprop pro 1 výstup
   // -----------------------------
   function handleLearnStep() {
     if (outputCount !== 1) {
-      alert("Learning demo funguje jen s 1 outputem.");
+      alert("Learning demo funguje jen pro 1 output!");
       return;
     }
 
-    // 1) Spočítat sumy pro hidden a output (zachytit si raw sum pro derivaci)
+    // Předpočítej sumHidden, sumOutput
     const sumsHidden: number[] = [];
-    const sumsOutput: number[] = []; // pro 1 output prvek sumsOutput[0]
-
-    // Hidden
     for (let j = 0; j < hiddenCount; j++) {
       let sum = 0;
       for (let i = 0; i < inputCount; i++) {
@@ -164,33 +162,29 @@ export default function NeuralNetworkCanvas() {
       }
       sumsHidden[j] = sum;
     }
-    const hActivations = sumsHidden.map((sum) => sigmoid(sum));
+    const hActs = sumsHidden.map(sigmoid);
 
-    // Output
     let sumOut = 0;
     for (let j = 0; j < hiddenCount; j++) {
-      sumOut += hActivations[j] * (weightsHO[j]?.[0] ?? 0);
+      sumOut += hActs[j] * (weightsHO[j]?.[0] ?? 0);
     }
-    sumsOutput[0] = sumOut;
     const outAct = sigmoid(sumOut);
 
-    // 2) Spočti error = (outAct - target)
+    // Error
     const error = outAct - targetValue;
 
-    // 3) Backprop to output layer
-    // dL/dw_{j} = (outAct - target) * derivSigmoid(sumOut) * h_j
+    // Output gradient
     const dOut = error * sigmoidPrime(sumOut);
 
-    // Uprav wHO[j][0]
-    const newWho = JSON.parse(JSON.stringify(weightsHO)) as number[][];
+    // Upravit weightsHO
+    const newWho = structuredClone(weightsHO) as number[][];
     for (let j = 0; j < hiddenCount; j++) {
-      const grad = dOut * hActivations[j];
-      newWho[j][0] -= learningRate * grad; // gradient descend
+      const grad = dOut * hActs[j];
+      newWho[j][0] -= learningRate * grad;
     }
 
-    // 4) Backprop to hidden layer
-    // Pro hidden: dL/dwIH[i][j] = dOut * wHO[j][0] * sigmPrime(sumsHidden[j]) * x_i
-    const newWih = JSON.parse(JSON.stringify(weightsIH)) as number[][];
+    // Hidden gradient
+    const newWih = structuredClone(weightsIH) as number[][];
     for (let j = 0; j < hiddenCount; j++) {
       const dHidden = dOut * weightsHO[j][0] * sigmoidPrime(sumsHidden[j]);
       for (let i = 0; i < inputCount; i++) {
@@ -201,39 +195,42 @@ export default function NeuralNetworkCanvas() {
 
     setWeightsHO(newWho);
     setWeightsIH(newWih);
-
-    // 5) forwardPropagation se zavolá z useEffect
   }
 
   // -----------------------------
-  // UI a render
+  // 4) Otevřít/zavřít config panel
   // -----------------------------
   function toggleConfig() {
     setShowConfig(!showConfig);
   }
 
+  // -----------------------------
+  // RENDER
+  // -----------------------------
   return (
     <div className="flex flex-col gap-6 items-center">
-      <h1 className="text-2xl font-bold">Interactive Neural Network</h1>
+      <h1 className="text-2xl font-bold">
+        Interactive Neural Network (Fully Dynamic)
+      </h1>
 
       <ExplanationBox />
 
-      {/* Panel (nad grafem) */}
+      {/* Config panel */}
       {showConfig && (
         <ConfigPanel
           inputCount={inputCount}
+          hiddenCount={hiddenCount}
           outputCount={outputCount}
           inputValues={inputValues}
           weightsIH={weightsIH}
           weightsHO={weightsHO}
-          onClose={toggleConfig}
-          onReinitNetwork={reinitNetwork}
           setInputValues={setInputValues}
           setWeightsIH={setWeightsIH}
           setWeightsHO={setWeightsHO}
+          onClose={toggleConfig}
+          onReinitNetwork={reinitNetwork}
         />
       )}
-
       {!showConfig && (
         <button
           className="px-4 py-2 bg-blue-600 text-white rounded"
@@ -243,32 +240,35 @@ export default function NeuralNetworkCanvas() {
         </button>
       )}
 
-      {/* Vstupní hodnoty */}
+      {/* VSTUPY */}
       <div className="flex gap-2 items-center">
-        <span>Input Values:</span>
+        <span className="font-medium">Input Values:</span>
         {inputValues.map((val, i) => (
           <input
             key={i}
             type="number"
+            className="border w-14 text-center"
             value={val}
             onChange={(e) => {
               const arr = [...inputValues];
               arr[i] = Number(e.target.value);
               setInputValues(arr);
             }}
-            className="border w-14 text-center"
           />
         ))}
       </div>
 
-      {/* Neuronová síť (SVG) */}
+      {/* SVG - adaptivní neurony */}
       <NeuralNetworkSVG
+        inputCount={inputCount}
+        hiddenCount={hiddenCount}
+        outputCount={outputCount}
         inputValues={inputValues}
         hiddenActivations={hiddenActivations}
         outputActivations={outputActivations}
       />
 
-      {/* Learning panel (jen pro 1 output) */}
+      {/* Learning panel jen pro 1 output */}
       {outputCount === 1 && (
         <LearningPanel
           targetValue={targetValue}

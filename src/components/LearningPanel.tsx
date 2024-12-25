@@ -21,8 +21,8 @@ export default function LearningPanel({
     <div className="border p-4 w-[500px] bg-gray-50 text-sm">
       <h2 className="text-lg font-bold mb-2">Learning Demo</h2>
       <p className="mb-1">
-        Zde můžeš zadat cílovou hodnotu pro výstup (1 output neuron) a naučit
-        síť jedním krokem backpropagation, aby se výstup blížil tomuto cíli.
+        Tady můžeš zadat cílovou hodnotu (Target) pro 1 výstupní neuron a
+        posunout váhy jedním krokem backprop, aby se výstup přiblížil k cíli.
       </p>
       <div className="flex gap-4 mt-2">
         <div>

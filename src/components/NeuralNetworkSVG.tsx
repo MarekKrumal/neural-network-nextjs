@@ -1,53 +1,62 @@
 import React, { useState } from "react";
 
 type Props = {
+  inputCount: number;
+  hiddenCount: number;
+  outputCount: number;
   inputValues: number[];
   hiddenActivations: number[];
   outputActivations: number[];
 };
 
 export default function NeuralNetworkSVG({
+  inputCount,
+  hiddenCount,
+  outputCount,
   inputValues,
   hiddenActivations,
   outputActivations,
 }: Props) {
-  // Stavy pro hover
+  // Hover stav
   const [hoveredLayer, setHoveredLayer] = useState<
     "input" | "hidden" | "output" | null
   >(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  const inputNeuronPositions = [
-    { x: 50, y: 100 },
-    { x: 50, y: 200 },
-    { x: 50, y: 300 },
-  ];
-  const hiddenNeuronPositions = [
-    { x: 250, y: 80 },
-    { x: 250, y: 180 },
-    { x: 250, y: 280 },
-    { x: 250, y: 380 },
-  ];
-  const outputNeuronPositions = [{ x: 450, y: 200 }];
+  // Dynamicky vytvoříme pole pozic
+  const inputNeuronPositions = generatePositions(50, 100, inputCount);
+  const hiddenNeuronPositions = generatePositions(250, 80, hiddenCount);
+  const outputNeuronPositions = generatePositions(450, 120, outputCount);
 
-  function isHoveredNeuron(
-    layer: "input" | "hidden" | "output",
-    index: number
-  ) {
-    return hoveredLayer === layer && hoveredIndex === index;
+  function generatePositions(xBase: number, yStart: number, count: number) {
+    // Rozložíme neurony svisle s mezerou 60 px
+    const positions = [];
+    for (let i = 0; i < count; i++) {
+      positions.push({ x: xBase, y: yStart + i * 60 });
+    }
+    return positions;
   }
 
-  /** Vykreslení spojnic se zvýrazněním, pokud jsme na neuronu. */
+  // Zvýraznění linek
+  function isHighlight(
+    layer: "input" | "hidden" | "output",
+    idx: number,
+    layer2: "input" | "hidden" | "output",
+    idx2: number
+  ) {
+    // Zvýrazníme linku, pokud hovered je (layer, idx) nebo (layer2, idx2)
+    return (
+      (hoveredLayer === layer && hoveredIndex === idx) ||
+      (hoveredLayer === layer2 && hoveredIndex === idx2)
+    );
+  }
+
   function renderConnections() {
     const lines = [];
-
     // Input->Hidden
-    for (let i = 0; i < inputNeuronPositions.length; i++) {
-      for (let j = 0; j < hiddenNeuronPositions.length; j++) {
-        // Zvýraznit, pokud je hovered input i, hidden j
-        const highlight =
-          (hoveredLayer === "input" && hoveredIndex === i) ||
-          (hoveredLayer === "hidden" && hoveredIndex === j);
+    for (let i = 0; i < inputCount; i++) {
+      for (let j = 0; j < hiddenCount; j++) {
+        const highlight = isHighlight("input", i, "hidden", j);
         lines.push(
           <line
             key={`IH-${i}-${j}`}
@@ -63,11 +72,9 @@ export default function NeuralNetworkSVG({
     }
 
     // Hidden->Output
-    for (let j = 0; j < hiddenNeuronPositions.length; j++) {
-      for (let o = 0; o < outputNeuronPositions.length; o++) {
-        const highlight =
-          (hoveredLayer === "hidden" && hoveredIndex === j) ||
-          (hoveredLayer === "output" && hoveredIndex === o);
+    for (let j = 0; j < hiddenCount; j++) {
+      for (let o = 0; o < outputCount; o++) {
+        const highlight = isHighlight("hidden", j, "output", o);
         lines.push(
           <line
             key={`HO-${j}-${o}`}
@@ -84,37 +91,32 @@ export default function NeuralNetworkSVG({
     return lines;
   }
 
-  // Handlery
-  function handleMouseEnterNeuron(
-    layer: "input" | "hidden" | "output",
-    index: number
-  ) {
+  function handleMouseEnter(layer: "input" | "hidden" | "output", idx: number) {
     setHoveredLayer(layer);
-    setHoveredIndex(index);
+    setHoveredIndex(idx);
   }
-  function handleMouseLeaveNeuron() {
+  function handleMouseLeave() {
     setHoveredLayer(null);
     setHoveredIndex(null);
   }
 
+  // Vykreslení
   return (
     <svg width={600} height={500} className="border border-gray-300 bg-white">
       {renderConnections()}
 
       {/* Input neurony */}
       {inputNeuronPositions.map((pos, i) => {
-        const hovered = isHoveredNeuron("input", i);
+        const hovered = hoveredLayer === "input" && hoveredIndex === i;
         return (
-          <g
-            key={`in-${i}`}
-            onMouseEnter={() => handleMouseEnterNeuron("input", i)}
-            onMouseLeave={handleMouseLeaveNeuron}
-          >
+          <g key={`in-${i}`}>
             <circle
               cx={pos.x}
               cy={pos.y}
-              r={hovered ? 24 : 20} // zvětšení
-              fill={hovered ? "#1d4ed8" : "#3b82f6"} // trošku tmavší barva
+              r={hovered ? 24 : 20}
+              fill={hovered ? "#1d4ed8" : "#3b82f6"}
+              onMouseEnter={() => handleMouseEnter("input", i)}
+              onMouseLeave={handleMouseLeave}
             />
             <text
               x={pos.x}
@@ -132,18 +134,16 @@ export default function NeuralNetworkSVG({
 
       {/* Hidden neurony */}
       {hiddenNeuronPositions.map((pos, j) => {
-        const hovered = isHoveredNeuron("hidden", j);
+        const hovered = hoveredLayer === "hidden" && hoveredIndex === j;
         return (
-          <g
-            key={`h-${j}`}
-            onMouseEnter={() => handleMouseEnterNeuron("hidden", j)}
-            onMouseLeave={handleMouseLeaveNeuron}
-          >
+          <g key={`h-${j}`}>
             <circle
               cx={pos.x}
               cy={pos.y}
               r={hovered ? 24 : 20}
               fill={hovered ? "#3b82f6" : "#60a5fa"}
+              onMouseEnter={() => handleMouseEnter("hidden", j)}
+              onMouseLeave={handleMouseLeave}
             />
             <text
               x={pos.x}
@@ -153,7 +153,7 @@ export default function NeuralNetworkSVG({
               fontSize={12}
               fontWeight="bold"
             >
-              {hiddenActivations[j]?.toFixed(2) || "0.00"}
+              {hiddenActivations[j]?.toFixed(2)}
             </text>
           </g>
         );
@@ -161,18 +161,16 @@ export default function NeuralNetworkSVG({
 
       {/* Output neurony */}
       {outputNeuronPositions.map((pos, o) => {
-        const hovered = isHoveredNeuron("output", o);
+        const hovered = hoveredLayer === "output" && hoveredIndex === o;
         return (
-          <g
-            key={`out-${o}`}
-            onMouseEnter={() => handleMouseEnterNeuron("output", o)}
-            onMouseLeave={handleMouseLeaveNeuron}
-          >
+          <g key={`out-${o}`}>
             <circle
               cx={pos.x}
               cy={pos.y}
               r={hovered ? 24 : 20}
               fill={hovered ? "#1e3a8a" : "#2563eb"}
+              onMouseEnter={() => handleMouseEnter("output", o)}
+              onMouseLeave={handleMouseLeave}
             />
             <text
               x={pos.x}
@@ -182,7 +180,7 @@ export default function NeuralNetworkSVG({
               fontSize={12}
               fontWeight="bold"
             >
-              {outputActivations[o]?.toFixed(2) || "0.00"}
+              {outputActivations[o]?.toFixed(2)}
             </text>
           </g>
         );

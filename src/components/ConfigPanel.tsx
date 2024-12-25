@@ -2,59 +2,72 @@ import React from "react";
 
 type Props = {
   inputCount: number;
+  hiddenCount: number;
   outputCount: number;
+
   inputValues: number[];
   weightsIH: number[][];
   weightsHO: number[][];
-  onClose: () => void;
-  onReinitNetwork: (newInputCount: number, newOutputCount: number) => void;
+
   setInputValues: React.Dispatch<React.SetStateAction<number[]>>;
   setWeightsIH: React.Dispatch<React.SetStateAction<number[][]>>;
   setWeightsHO: React.Dispatch<React.SetStateAction<number[][]>>;
+
+  onClose: () => void;
+
+  // Slouží k re-inicializaci (včetně hiddenCount)
+  onReinitNetwork: (
+    newInputCount: number,
+    newHiddenCount: number,
+    newOutputCount: number
+  ) => void;
 };
 
 export default function ConfigPanel({
   inputCount,
+  hiddenCount,
   outputCount,
   inputValues,
   weightsIH,
   weightsHO,
-  onClose,
-  onReinitNetwork,
   setInputValues,
   setWeightsIH,
   setWeightsHO,
+  onClose,
+  onReinitNetwork,
 }: Props) {
-  // Ošetříme změnu inputCount a outputCount skrz onReinitNetwork
   function handleInputCountChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = Number(e.target.value);
     if (val < 1) return;
-    onReinitNetwork(val, outputCount);
+    onReinitNetwork(val, hiddenCount, outputCount);
   }
-
+  function handleHiddenCountChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = Number(e.target.value);
+    if (val < 1) return;
+    onReinitNetwork(inputCount, val, outputCount);
+  }
   function handleOutputCountChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = Number(e.target.value);
     if (val < 1) return;
-    onReinitNetwork(inputCount, val);
+    onReinitNetwork(inputCount, hiddenCount, val);
   }
 
-  // Úprava Input Values
+  // Uprav inputValues (okamžitě)
   function handleInputValueChange(idx: number, value: string) {
     const arr = [...inputValues];
     arr[idx] = Number(value);
     setInputValues(arr);
   }
 
-  // Úprava WeightIH
+  // Uprav WeightIH
   function handleWeightIH(i: number, j: number, value: string) {
-    const copy = JSON.parse(JSON.stringify(weightsIH)) as number[][];
+    const copy = structuredClone(weightsIH) as number[][];
     copy[i][j] = Number(value);
     setWeightsIH(copy);
   }
-
-  // Úprava WeightHO
+  // Uprav WeightHO
   function handleWeightHO(j: number, o: number, value: string) {
-    const copy = JSON.parse(JSON.stringify(weightsHO)) as number[][];
+    const copy = structuredClone(weightsHO) as number[][];
     copy[j][o] = Number(value);
     setWeightsHO(copy);
   }
@@ -63,29 +76,37 @@ export default function ConfigPanel({
     <div className="border border-gray-300 bg-gray-50 p-4 w-[800px]">
       <h2 className="text-lg font-bold mb-2">Edit Configuration</h2>
 
-      {/* Počet vstupů a výstupů */}
       <div className="flex gap-8 mb-4">
         <div>
-          <label className="font-medium">Number of Inputs:</label>
+          <label className="font-medium">#Inputs:</label>
           <input
             type="number"
+            className="border p-1 w-16 ml-2"
             value={inputCount}
             onChange={handleInputCountChange}
-            className="border p-1 w-16 ml-2"
           />
         </div>
         <div>
-          <label className="font-medium">Number of Outputs:</label>
+          <label className="font-medium">#Hidden:</label>
           <input
             type="number"
+            className="border p-1 w-16 ml-2"
+            value={hiddenCount}
+            onChange={handleHiddenCountChange}
+          />
+        </div>
+        <div>
+          <label className="font-medium">#Outputs:</label>
+          <input
+            type="number"
+            className="border p-1 w-16 ml-2"
             value={outputCount}
             onChange={handleOutputCountChange}
-            className="border p-1 w-16 ml-2"
           />
         </div>
       </div>
 
-      {/* Input Values */}
+      {/* Edit inputValues */}
       <div className="mb-4">
         <p className="font-semibold mb-2">
           Input Values (for {inputCount} inputs)
@@ -103,7 +124,7 @@ export default function ConfigPanel({
         </div>
       </div>
 
-      {/* Tabulka vah s omezenou výškou */}
+      {/* Tabulka vah */}
       <div
         className="mb-4 border border-gray-200 p-2"
         style={{ maxHeight: "250px", overflowY: "auto" }}
