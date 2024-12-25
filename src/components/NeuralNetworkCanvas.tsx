@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import ExplanationBox from "./ExplanationBox";
 import MultiLayerSVG from "./MultiLayerSVG";
 import ConfigPanel from "./ConfigPanel";
@@ -179,7 +179,7 @@ export default function NeuralNetworkCanvas() {
   return (
     <div className="flex flex-col gap-4 items-center bg-gray-900 text-gray-200 min-h-screen p-4 relative">
       <h1 className="text-2xl font-bold text-blue-400">
-        Multi-Layer Neural Network
+        Multi-Layer Neural Network Visualization
       </h1>
 
       <ExplanationBox />

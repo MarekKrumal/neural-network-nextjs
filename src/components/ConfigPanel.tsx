@@ -1,5 +1,3 @@
-import React from "react";
-
 type Props = {
   inputCount: number;
   layers: number[];
@@ -172,16 +170,6 @@ export default function ConfigPanel({
           Weights for each layer
         </p>
         {weights.map((mat, layerIdx) => {
-          const title =
-            layerIdx === 0
-              ? "Input → Hidden1"
-              : layerIdx < layers.length - 1
-              ? `Hidden${layerIdx} → Hidden${layerIdx + 1}`
-              : layerIdx === layers.length - 1 && layers.length > 1
-              ? `Hidden${layerIdx} → Output`
-              : layerIdx === layers.length
-              ? `Hidden${layers.length} → Output`
-              : "???";
           // Upřesníme trošku:
           let labelStr = "";
           if (layerIdx === 0 && layers.length > 0) {

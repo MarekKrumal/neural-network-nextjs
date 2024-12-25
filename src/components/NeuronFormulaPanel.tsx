@@ -1,4 +1,3 @@
-import React from "react";
 import Latex from "react-latex";
 
 interface SelectedNeuron {
@@ -19,9 +18,6 @@ type Props = {
 export default function NeuronFormulaPanel({
   selectedNeuron,
   inputValues,
-  hiddenActivations,
-  outputActivations,
-  weights,
   onClose,
   style = {},
 }: Props) {

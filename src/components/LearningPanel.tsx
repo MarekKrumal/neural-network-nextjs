@@ -1,5 +1,3 @@
-import React from "react";
-
 type Props = {
   targetValue: number;
   setTargetValue: React.Dispatch<React.SetStateAction<number>>;

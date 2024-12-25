@@ -1,5 +1,3 @@
-import React from "react";
-
 type Props = {
   tempWeightsIH: number[][]; // dočasné váhy Input->Hidden
   tempWeightsHO: number[][]; // dočasné váhy Hidden->Output
