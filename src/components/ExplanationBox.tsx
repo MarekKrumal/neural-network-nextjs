@@ -6,22 +6,26 @@ export default function ExplanationBox() {
     <div className="border p-4 bg-gray-100 w-[700px] text-sm text-gray-700">
       <h2 className="font-bold mb-2 text-lg">Co tady vidíte?</h2>
       <p className="mb-2">
-        Tato aplikace zobrazuje jednoduchou neuronovou síť s jednou skrytou
-        vrstvou. Můžete zadat vstupní hodnoty (modré neurony), jejichž signál
-        projde skrytou vrstvou (světle modré neurony) a vyústí do výstupních
-        neuronů (tmavě modré).
+        Tato aplikace zobrazuje neuronovou síť s jednou skrytou vrstvou (4
+        neurony). Můžeš měnit počet vstupů, výstupů, samotné váhy a vstupní
+        hodnoty.
       </p>
       <p className="mb-2">
-        Váhy mezi vrstvami řídí, jak silně se vstupy přenáší do dalších neuronů.
-        Dopřednou propagaci popisuje vzorec:
+        Pokud nastavíš <strong>1 výstup</strong>, můžeš využít sekci „Learning
+        Demo“, abys síť v jednom kroku naučil přiblížit se k dané cílové
+        hodnotě. Uplatňujeme zjednodušený backpropagation algoritmus.
       </p>
-      <Latex>
-        {`$z_j^{(hidden)} = \\sigma\\Bigl(\\sum_{i} x_i \\cdot w_{i,j}\\Bigr), 
-          \\quad y_k = \\sigma\\Bigl(\\sum_{j} h_j \\cdot w_{j,k}\\Bigr)$`}
-      </Latex>
-      <p className="mt-2">
-        Kliknutím na <strong>Edit Weights</strong> můžete změnit váhy. Tím
-        uvidíte, jak se změní výsledné aktivace a výstup.
+      <p className="mb-2">Dopředná propagace se počítá podle:</p>
+      <Latex>{`$ h_j = \\sigma(\\sum_i x_i w_{i,j}), \\quad y = \\sigma(\\sum_j h_j w_{j})$`}</Latex>
+      <p className="mb-2">
+        V panelu <strong>Edit Configuration</strong> (nahoře) můžeš měnit
+        všechny váhy a velikost sítě. Po uložení se hodnoty automaticky
+        přepočítají.
+      </p>
+      <p className="mb-2">
+        Když <strong>zvětšíš počet vstupů či výstupů</strong>, aplikace náhodně
+        vygeneruje chybějící váhy, aby nedošlo k chybě. Můžeš je pak ručně
+        doladit nebo použít „Learn Step“.
       </p>
     </div>
   );
