@@ -21,10 +21,14 @@ export default function ExplanationBox() {
         A výstup
         <Latex>{`$ y = \\sigma\\Bigl(\\sum_j h_j w_{j}\\Bigr). $`}</Latex>
       </p>
+      <ul className="list-disc list-inside ml-2">
+        <li>Můžete kliknout na jednotlivé neurony a zobrazit jejich formuli</li>
+      </ul>
       <p className="mb-2">
-        V sekci <strong>Learning Demo</strong> (pokud máš 1 výstup) můžeš
-        kliknutím na <em>Learn Step</em> poukázat na základní backprop. Výstup
-        by se měl přiblížit zadanému cíli.
+        <div className="text-bold text-xl">ZATIM NEFUNGUJE!</div> V sekci{" "}
+        <strong>Learning Demo</strong> (pokud máš 1 výstup) můžeš kliknutím na{" "}
+        <em>Learn Step</em> poukázat na základní backprop. Výstup by se měl
+        přiblížit zadanému cíli.
       </p>
     </div>
   );

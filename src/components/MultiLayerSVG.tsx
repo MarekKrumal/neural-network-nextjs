@@ -2,12 +2,19 @@ import React, { useState } from "react";
 
 type Props = {
   inputCount: number;
-  layers: number[]; // např. [4, 5, 6] => 3 hidden layers
+  layers: number[];
   outputCount: number;
 
   inputValues: number[];
-  hiddenActivations: number[][]; // hiddenActivations[i] = pole neuronů vrstvy i
+  hiddenActivations: number[][];
   outputActivations: number[];
+
+  // Nová signatura => pos: {x, y}
+  onNeuronClick: (
+    layerIndex: number | "input" | "output",
+    neuronIndex: number,
+    pos: { x: number; y: number }
+  ) => void;
 };
 
 export default function MultiLayerSVG({
@@ -17,35 +24,26 @@ export default function MultiLayerSVG({
   inputValues,
   hiddenActivations,
   outputActivations,
+  onNeuronClick,
 }: Props) {
   const [hoveredLayer, setHoveredLayer] = useState<
     number | "input" | "output" | null
   >(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  // 0. Vrstva = input
-  // 1..layers.length => hidden
-  // poslední vrstva => output
-
-  // Vytvoříme pole "layerPositions":
-  // layerPositions[0] = souřadnice input neuronů
-  // layerPositions[1] = souřadnice hidden[0]
-  // layerPositions[2] = souřadnice hidden[1]
-  // ...
-  // layerPositions[layers.length] = hidden poslední
-  // layerPositions[layers.length+1] = output
+  // Array of positions for each layer
   const layerPositions: { x: number; y: number }[][] = [];
 
-  // 1) Input positions
-  layerPositions[0] = generatePositions(100, 80, inputCount);
+  // input
+  layerPositions[0] = generatePositions(80, 80, inputCount);
 
-  // 2) Hidden layers
+  // hidden layers
   for (let i = 0; i < layers.length; i++) {
     const xBase = 300 + i * 200;
     layerPositions[i + 1] = generatePositions(xBase, 60, layers[i]);
   }
 
-  // 3) Output
+  // output
   const xOutput = 300 + layers.length * 200;
   layerPositions[layers.length + 1] = generatePositions(
     xOutput,
@@ -61,9 +59,6 @@ export default function MultiLayerSVG({
     return arr;
   }
 
-  // Počet "vrstev" (včetně input a output) = layers.length + 2
-  // => indexy 0..(layers.length+1)
-  // spoje se táhnou z layer i do layer i+1
   function isHighlighted(
     layerIndex: number | "input" | "output",
     idx: number,
@@ -78,21 +73,20 @@ export default function MultiLayerSVG({
 
   function renderLines() {
     const lines = [];
-    // Z layer i do layer i+1
-    const totalLayers = layers.length + 2; // 0..(n+1)
-    for (let i = 0; i < totalLayers - 1; i++) {
-      const fromPositions = layerPositions[i];
-      const toPositions = layerPositions[i + 1];
-      for (let f = 0; f < fromPositions.length; f++) {
-        for (let t = 0; t < toPositions.length; t++) {
+    // Layers = hidden + input, total = layers.length+2
+    for (let i = 0; i < layers.length + 1; i++) {
+      const fromPos = layerPositions[i];
+      const toPos = layerPositions[i + 1];
+      for (let f = 0; f < fromPos.length; f++) {
+        for (let t = 0; t < toPos.length; t++) {
           const highlight = isHighlighted(i, f, i + 1, t);
           lines.push(
             <line
               key={`line-${i}-${f}-${t}`}
-              x1={fromPositions[f].x}
-              y1={fromPositions[f].y}
-              x2={toPositions[t].x}
-              y2={toPositions[t].y}
+              x1={fromPos[f].x}
+              y1={fromPos[f].y}
+              x2={toPos[t].x}
+              y2={toPos[t].y}
               stroke={highlight ? "#f00" : "#555"}
               strokeWidth={highlight ? 2 : 1}
             />
@@ -115,6 +109,13 @@ export default function MultiLayerSVG({
     setHoveredIndex(null);
   }
 
+  /** Responsivní poloměr */
+  function getRadius(count: number, hovered: boolean) {
+    const base = 30 - Math.min(20, count * 1.5);
+    const rad = Math.max(10, base);
+    return hovered ? rad + 4 : rad;
+  }
+
   return (
     <svg
       width={1000}
@@ -123,18 +124,22 @@ export default function MultiLayerSVG({
     >
       {renderLines()}
 
-      {/* Vrstvu 0 (input) */}
+      {/* INPUT */}
       {layerPositions[0].map((pos, i) => {
         const hovered = hoveredLayer === 0 && hoveredIndex === i;
+        const r = getRadius(inputCount, hovered);
         return (
           <g key={`input-${i}`}>
             <circle
               cx={pos.x}
               cy={pos.y}
-              r={hovered ? 24 : 20}
+              r={r}
               fill={hovered ? "#1d4ed8" : "#3b82f6"}
               onMouseEnter={() => handleMouseEnter(0, i)}
               onMouseLeave={handleMouseLeave}
+              // Předáváme i pos
+              onClick={() => onNeuronClick("input", i, pos)}
+              style={{ cursor: "pointer" }}
             />
             <text
               x={pos.x}
@@ -150,22 +155,24 @@ export default function MultiLayerSVG({
         );
       })}
 
-      {/* Hidden vrstvy */}
+      {/* HIDDEN vrstvy */}
       {layers.map((count, layerIdx) => {
-        const layerIndex = layerIdx + 1; // 1..n
-        // positions = layerPositions[layerIndex]
+        const positions = layerPositions[layerIdx + 1];
         const acts = hiddenActivations[layerIdx] ?? [];
-        return layerPositions[layerIndex].map((pos, j) => {
-          const hovered = hoveredLayer === layerIndex && hoveredIndex === j;
+        return positions.map((pos, j) => {
+          const hovered = hoveredLayer === layerIdx + 1 && hoveredIndex === j;
+          const r = getRadius(count, hovered);
           return (
             <g key={`hidden-${layerIdx}-${j}`}>
               <circle
                 cx={pos.x}
                 cy={pos.y}
-                r={hovered ? 24 : 20}
+                r={r}
                 fill={hovered ? "#3b82f6" : "#60a5fa"}
-                onMouseEnter={() => handleMouseEnter(layerIndex, j)}
+                onMouseEnter={() => handleMouseEnter(layerIdx + 1, j)}
                 onMouseLeave={handleMouseLeave}
+                onClick={() => onNeuronClick(layerIdx + 1, j, pos)}
+                style={{ cursor: "pointer" }}
               />
               <text
                 x={pos.x}
@@ -175,26 +182,29 @@ export default function MultiLayerSVG({
                 fontSize={12}
                 fontWeight="bold"
               >
-                {acts[j]?.toFixed(2) ?? "0.00"}
+                {acts[j]?.toFixed(2) || "0.00"}
               </text>
             </g>
           );
         });
       })}
 
-      {/* Output vrstva = layerPositions[layers.length+1] */}
+      {/* OUTPUT */}
       {layerPositions[layers.length + 1].map((pos, o) => {
         const hovered =
           hoveredLayer === layers.length + 1 && hoveredIndex === o;
+        const r = getRadius(outputCount, hovered);
         return (
           <g key={`output-${o}`}>
             <circle
               cx={pos.x}
               cy={pos.y}
-              r={hovered ? 24 : 20}
+              r={r}
               fill={hovered ? "#1e3a8a" : "#2563eb"}
               onMouseEnter={() => handleMouseEnter(layers.length + 1, o)}
               onMouseLeave={handleMouseLeave}
+              onClick={() => onNeuronClick("output", o, pos)}
+              style={{ cursor: "pointer" }}
             />
             <text
               x={pos.x}
@@ -204,7 +214,7 @@ export default function MultiLayerSVG({
               fontSize={12}
               fontWeight="bold"
             >
-              {outputActivations[o]?.toFixed(2) ?? "0.00"}
+              {outputActivations[o]?.toFixed(2) || "0.00"}
             </text>
           </g>
         );
