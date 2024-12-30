@@ -25,8 +25,7 @@ export default function ConfigPanel({
   setInputCount,
   setLayers,
   setOutputCount,
-  inputValues,
-  setInputValues,
+
   weights,
   setWeights,
   onClose,
