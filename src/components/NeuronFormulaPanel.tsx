@@ -8,11 +8,8 @@ interface SelectedNeuron {
 type Props = {
   selectedNeuron: SelectedNeuron;
   inputValues: number[];
-  hiddenActivations: number[][];
-  outputActivations: number[];
-  weights: number[][][];
   onClose: () => void;
-  style?: React.CSSProperties; // nově, abychom mohli panel umístit
+  style?: React.CSSProperties;
 };
 
 export default function NeuronFormulaPanel({
@@ -52,7 +49,8 @@ export default function NeuronFormulaPanel({
         background: "#222",
         color: "#eee",
         padding: "0.5rem",
-        width: "220px",
+        width: "270px",
+        borderRadius: "6px",
         ...style,
       }}
     >
@@ -60,10 +58,9 @@ export default function NeuronFormulaPanel({
         {title}
       </h3>
       <Latex>{latexFormula}</Latex>
-
       <button
         style={{
-          marginTop: "0.5rem",
+          margin: "0.5rem",
           background: "#444",
           color: "#fff",
           padding: "0.3rem 0.6rem",
@@ -73,7 +70,7 @@ export default function NeuronFormulaPanel({
         }}
         onClick={onClose}
       >
-        Close
+        Zavřít
       </button>
     </div>
   );

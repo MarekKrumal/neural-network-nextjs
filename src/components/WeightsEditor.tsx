@@ -16,7 +16,7 @@ export default function WeightsEditor({
   onCancel,
 }: Props) {
   return (
-    <div className="border border-gray-400 p-4 bg-gray-50 w-[700px]">
+    <div className="border border-gray-400 p-4 bg-gray-50">
       <h2 className="font-bold mb-2 text-lg">Edit Weights</h2>
 
       <div className="flex gap-6">

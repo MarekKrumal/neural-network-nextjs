@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import ExplanationBox from "./ExplanationBox";
 import MultiLayerSVG from "./MultiLayerSVG";
 import ConfigPanel from "./ConfigPanel";
-import LearningPanel from "./LearningPanel";
 import NeuronFormulaPanel from "./NeuronFormulaPanel";
 import "katex/dist/katex.min.css";
 
@@ -17,41 +16,41 @@ interface SelectedNeuron {
 
 export default function NeuralNetworkCanvas() {
   // -----------------------------
-  // STAV
+  // STAVY
   // -----------------------------
   const [inputCount, setInputCount] = useState(3);
   const [layers, setLayers] = useState<number[]>([4]);
   const [outputCount, setOutputCount] = useState(1);
 
-  // Inputy
+  // Vstupní data
   const [inputValues, setInputValues] = useState<number[]>([1, 2, 3]);
 
-  // Váhy
+  // Váhy (pole matic):
+  //   weights[0] = matice (inputCount × layers[0]) – Input → Hidden1
+  //   weights[i] = matice (layers[i-1] × layers[i]) – Hidden i → Hidden i+1
+  //   weights[layers.length] = matice (layers[last] × outputCount) – HiddenLast → Output
   const [weights, setWeights] = useState<number[][][]>([]);
 
-  // Aktivace hidden a output
+  // Aktivace skrytých vrstev + výstupu
   const [hiddenActivations, setHiddenActivations] = useState<number[][]>([]);
   const [outputActivations, setOutputActivations] = useState<number[]>([]);
 
-  // Zobrazení konfig panelu
+  // Zobrazení konfiguračního panelu
   const [showConfig, setShowConfig] = useState(false);
 
-  // Učení (demo)
-  const [targetValue, setTargetValue] = useState(0.5);
-  const [learningRate, setLearningRate] = useState(0.1);
-
-  // Vybraný neuron (LaTeX panel)
+  // Panel s rovnicí (po kliknutí na neuron)
   const [selectedNeuron, setSelectedNeuron] = useState<SelectedNeuron | null>(
     null
   );
-  // Souřadnice pro panel
   const [panelPos, setPanelPos] = useState<{ x: number; y: number } | null>(
     null
   );
 
   // -----------------------------
-  // useEffect: Při změně inputCount => uprav inputValues
+  // HOOKS
   // -----------------------------
+
+  // (1) Při změně inputCount => uprav inputValues
   useEffect(() => {
     if (inputValues.length < inputCount) {
       // Přidat nuly
@@ -63,13 +62,13 @@ export default function NeuralNetworkCanvas() {
     }
   }, [inputCount]);
 
-  // Kdykoli se změní (inputCount, layers, outputCount) => init vah
+  // (2) Kdykoli se změní (inputCount, layers, outputCount) => inicializuj / doplň váhy
   useEffect(() => {
     initWeightsIfNeeded();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputCount, layers, outputCount]);
 
-  // Kdykoli se změní (inputValues, weights) => dopředná propagace
+  // (3) Při změně inputValues NEBO weights => přepočti dopřednou propagaci
   useEffect(() => {
     forwardPropagation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -78,11 +77,16 @@ export default function NeuralNetworkCanvas() {
   // -----------------------------
   // FUNKCE
   // -----------------------------
-  function initWeightsIfNeeded() {
-    const totalTransitions = layers.length + 1;
-    const newWeights = [...weights];
 
-    // 1) Input->Hidden1 (pokud existuje hidden)
+  /**
+   * Zajistí, že v `weights` existuje správný počet matic
+   * (layers.length + 1). Chybějící prvky inicializuje náhodně.
+   */
+  function initWeightsIfNeeded() {
+    const newWeights = [...weights];
+    const totalTransitions = layers.length + 1; // Input->Hidden1 + Hidden i->i+1 + HiddenLast->Output
+
+    // 1) Input->Hidden1
     if (layers.length > 0) {
       newWeights[0] = reinitMatrix(newWeights[0] ?? [], inputCount, layers[0]);
     }
@@ -100,10 +104,16 @@ export default function NeuralNetworkCanvas() {
       layers[layers.length - 1] ?? 0,
       outputCount
     );
+
+    // Pokud by tam bylo něco navíc, ořízneme
     newWeights.length = totalTransitions;
     setWeights(newWeights);
   }
 
+  /**
+   * reinitMatrix:
+   * Ponechá existující hodnoty oldMat[r][c], jinak inicializuje random v [-1,1].
+   */
   function reinitMatrix(oldMat: number[][], newRows: number, newCols: number) {
     const result: number[][] = [];
     for (let r = 0; r < newRows; r++) {
@@ -120,48 +130,52 @@ export default function NeuralNetworkCanvas() {
     return result;
   }
 
+  /**
+   * Dopředná propagace:
+   * inputValues => (váhy 0) => hiddenActivations[0] => ...
+   * nakonec outputActivations
+   */
   function forwardPropagation() {
-    if (weights.length < 1) return;
+    if (weights.length === 0) return;
+
     let currentActs = [...inputValues];
-    const newHiddenActivations: number[][] = [];
+    const newHiddenActs: number[][] = [];
 
     for (let i = 0; i < weights.length; i++) {
       const w = weights[i];
-      const nextLayerSize = w[0]?.length ?? 0;
-      const newLayerActs: number[] = [];
+      if (!w[0]) break;
+
+      const nextLayerSize = w[0].length;
+      const nextActs: number[] = [];
       for (let n = 0; n < nextLayerSize; n++) {
         let sum = 0;
         for (let c = 0; c < currentActs.length; c++) {
           sum += currentActs[c] * (w[c]?.[n] ?? 0);
         }
-        newLayerActs[n] = sigmoid(sum);
+        nextActs[n] = sigmoid(sum);
       }
-      // Pokud i<layers.length => hidden vrstva
+      // Pokud i < layers.length => hidden
       if (i < layers.length) {
-        newHiddenActivations[i] = newLayerActs;
+        newHiddenActs[i] = nextActs;
       } else {
         // Output
-        setOutputActivations(newLayerActs);
+        setOutputActivations(nextActs);
       }
-      currentActs = newLayerActs;
+      currentActs = nextActs;
     }
-    setHiddenActivations(newHiddenActivations);
+    setHiddenActivations(newHiddenActs);
   }
 
-  // Učení (1 output) – jen demo
-  function handleLearnStep() {
-    alert("Neimplementováno plně pro multi-layers.");
-  }
-
-  // Klik neuron => setSelectedNeuron + panelPos
+  /**
+   * Když kliknu na neuron => ulož info a souřadnice
+   */
   function handleNeuronClick(
     layerIndex: number | "input" | "output",
     neuronIndex: number,
     coords: { x: number; y: number }
   ) {
     setSelectedNeuron({ layerIndex, neuronIndex });
-    // Např. posuneme panel o +20, +20 v Canvas
-    setPanelPos({ x: coords.x, y: coords.y });
+    setPanelPos(coords);
   }
 
   function closeNeuronPanel() {
@@ -177,56 +191,67 @@ export default function NeuralNetworkCanvas() {
   // RENDER
   // -----------------------------
   return (
-    <div className="flex flex-col gap-4 items-center bg-gray-900 text-gray-200 min-h-screen p-4 relative">
-      <h1 className="text-2xl font-bold text-blue-400">
-        Multi-Layer Neural Network Visualization
-      </h1>
+    <div className="flex flex-col gap-6 w-full relative text-gray-200">
+      <div className="flex flex-col items-center gap-4">
+        <ExplanationBox />
 
-      <ExplanationBox />
+        {!showConfig && (
+          <button
+            onClick={toggleConfig}
+            className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500"
+          >
+            Edit Configuration
+          </button>
+        )}
+      </div>
 
       {showConfig && (
-        <ConfigPanel
-          inputCount={inputCount}
-          layers={layers}
-          outputCount={outputCount}
-          setInputCount={setInputCount}
-          setLayers={setLayers}
-          setOutputCount={setOutputCount}
-          inputValues={inputValues}
-          setInputValues={setInputValues}
-          weights={weights}
-          setWeights={setWeights}
-          onClose={toggleConfig}
-        />
-      )}
-      {!showConfig && (
-        <button
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded"
-          onClick={toggleConfig}
-        >
-          Edit Configuration
-        </button>
+        <div className="mx-auto border border-gray-700 bg-gray-800 p-4 max-w-8xl text-gray-200 rounded">
+          <ConfigPanel
+            inputCount={inputCount}
+            layers={layers}
+            outputCount={outputCount}
+            setInputCount={setInputCount}
+            setLayers={setLayers}
+            setOutputCount={setOutputCount}
+            inputValues={inputValues}
+            setInputValues={setInputValues}
+            weights={weights}
+            setWeights={setWeights}
+            onClose={toggleConfig}
+          />
+        </div>
       )}
 
       {/* Input Values */}
-      <div className="flex gap-2 items-center">
-        <span className="font-medium">Input Values:</span>
-        {inputValues.map((val, i) => (
-          <input
-            key={i}
-            type="number"
-            className="border border-gray-700 bg-gray-800 text-gray-100 w-14 text-center"
-            value={val}
-            onChange={(e) => {
-              const arr = [...inputValues];
-              arr[i] = Number(e.target.value);
-              setInputValues(arr);
-            }}
-          />
-        ))}
+      <div className="flex flex-col items-center gap-2">
+        <span className="font-semibold text-lg text-blue-300">
+          Vstupní hodnoty (Input Values):
+        </span>
+        <div className="flex gap-2">
+          {inputValues.map((val, i) => (
+            <input
+              key={i}
+              type="number"
+              step="1"
+              className="border border-gray-700 bg-gray-800 text-gray-100 w-16 text-center rounded"
+              value={val}
+              onChange={(e) => {
+                const arr = [...inputValues];
+                arr[i] = parseFloat(e.target.value);
+                setInputValues(arr);
+              }}
+            />
+          ))}
+        </div>
       </div>
 
-      <div className="border border-gray-700 bg-gray-800 p-2 relative">
+      {/* MultiLayerSVG + Panel pro rovnice */}
+      {/* Přidáváme minHeight + overflow:visible, aby se panel NeuronFormulaPanel neusekával */}
+      <div
+        className="border border-gray-700 bg-gray-800 relative rounded w-full"
+        style={{ minHeight: "700px", overflow: "visible" }}
+      >
         <MultiLayerSVG
           inputCount={inputCount}
           layers={layers}
@@ -237,33 +262,22 @@ export default function NeuralNetworkCanvas() {
           onNeuronClick={handleNeuronClick}
         />
 
+        {/* Panel s rovnicí */}
         {selectedNeuron && panelPos && (
           <NeuronFormulaPanel
             selectedNeuron={selectedNeuron}
             inputValues={inputValues}
-            hiddenActivations={hiddenActivations}
-            outputActivations={outputActivations}
-            weights={weights}
             onClose={closeNeuronPanel}
             style={{
               position: "absolute",
               left: panelPos.x + 20,
               top: panelPos.y + 20,
+              // ať je nad SVG
+              zIndex: 50,
             }}
           />
         )}
       </div>
-
-      {outputCount === 1 && (
-        <LearningPanel
-          targetValue={targetValue}
-          setTargetValue={setTargetValue}
-          learningRate={learningRate}
-          setLearningRate={setLearningRate}
-          outputValue={outputActivations[0] ?? 0}
-          onLearnStep={handleLearnStep}
-        />
-      )}
     </div>
   );
 }
