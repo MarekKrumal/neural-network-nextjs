@@ -1,50 +1,38 @@
-# React + TypeScript + Vite
+# Neural Network Visualizer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![DEMOSCREENSHOT](public/screenshot.png)
 
-Currently, two official plugins are available:
+### DEMO APP
+-   [DEMO-APP DEPLOYMENT](https://neural-network-nextjs-lnpd.vercel.app/)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+**Neural Network Visualizer** is an application designed for visualizing and testing neural networks. The project was created as an experiment combining technical skills and the power of AI from OpenAI.
 
-## Expanding the ESLint configuration
+## 🛠️ Features/Technologies
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+### **Features**
+- **Neural network visualization**: Intuitive representation of how layers and weights function.
+- **Responsive design**: Fully optimized for both mobile and desktop devices.
+- **Extensive configuration**: Ability to adjust weights, number of layers, and other parameters.
+- **Interactive UI**: A user interface with fast responsiveness powered by React and Vite.
 
-- Configure the top-level `parserOptions` property like this:
+### **Technologies Used**
+- **Frameworks**: React.js, Vite
+- **Styling**: Tailwind CSS
+- **Deployment**: Vercel
+- **Libraries**: react-latex, react-mathjax
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+---
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## 📦 Jak spustit projekt lokálně?
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+### 📦 Installation and Running the Application
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+1. **Install dependencies**:
+   ```bash
+   npm install
+2. **Run the app**:
+   ```bash
+   npm run dev
+3. **Open the application in your browser**:
+   ```bash
+   Navigate to: http://localhost:3000
